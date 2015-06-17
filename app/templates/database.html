@@ -1,0 +1,23 @@
+{% extends "layout2.html" %}
+ 
+{% block content %}
+  <div class="jumbo">
+  <h2>Database</h2>
+
+  {% for message in form.searchterm.errors %}
+  <div class="flash">{{ message }}</div>
+  {% endfor %}
+  
+  <form action="{{ url_for('database') }}" method=post>
+    
+    {{ form.hidden_tag() }}
+
+	  {{ form.searchterm.label }}
+    {{ form.searchterm }}
+
+    {{ form.submit }}
+  
+  </form>
+  </div>
+
+{% endblock %}
