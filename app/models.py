@@ -2,12 +2,62 @@
 
 import datetime
 
-from flask.ext.sqlalchemy import SQLAlchemy
-from flask import Flask
+from app import db
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URL'] = 'temp.db'
-db = SQLAlchemy(app)
+class User(db.Model):
+    """A user capable of viewing 
+
+    :param str username: username of user
+    :param str password: encrypted password for the user
+
+    """
+    __tablename__ = 'user'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String)
+    password = db.Column(db.String)
+    authenticated = db.Column(db.Boolean, default=False)
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
+        
+    def __repr__(self):
+        return '<User %r>' % self.username
+
+    def is_active(self):
+         """True, as all users are active."""
+         return True
+
+    def get_id(self):
+         """Return the username to satify Flask-Login's requirements."""
+         try:
+            return unicode(self.id)  # python 2
+         except NameError:
+            return str(self.id)  # python 3
+
+    def is_authenticated(self):
+         """Return True if the user is authenticated."""
+         return self.authenticated
+
+    def is_anonymous(self):
+         """False, as anonymous users aren't supported."""
+         return False
+
+    
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    body = db.Column(db.String)
+    timestamp = db.Column(db.DateTime)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return '<Post %r>' % (self.body)
+
+
+# from flask.ext.sqlalchemy import SQLAlchemy
+# from flask import Flask
+
+# app = Flask(__name__)
+# app.config['SQLALCHEMY_DATABASE_URL'] = 'temp.db'
+# db = SQLAlchemy(app)
 
 # class Document(db.Model):
 #     """A digital product for uploaded in the database.
@@ -59,37 +109,3 @@ db = SQLAlchemy(app)
 #         """Return the string representation of the purchase."""
 #         return '{} bought by {}'.format(self.product.name, self.email)
 
-class User(db.Model):
-    """An admin user capable of viewing 
-
-    :param str username: username of user
-    :param str password: encrypted password for the user
-
-    """
-    __tablename__ = 'user'
-
-    username = db.Column(db.String, primary_key=True)
-    password = db.Column(db.String)
-    authenticated = db.Column(db.Boolean, default=False)
-
-    def is_active(self):
-        """True, as all users are active."""
-        return True
-
-    def get_id(self):
-        """Return the username to satify Flask-Login's requirements."""
-        return self.username
-
-    def is_authenticated(self):
-        """Return True if the user is authenticated."""
-        return self.authenticated
-
-    def is_anonymous(self):
-        """False, as anonymous users aren't supported."""
-        return False
-
-    def __init__(self, username, email):
-        self.username = username
-        
-    def __repr__(self):
-        return '<User %r>' % self.username

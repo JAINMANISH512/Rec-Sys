@@ -4,80 +4,41 @@ for searching of Documents
 """
 
 # all the imports
+from flask import render_template, flash, redirect, session, url_for, request, g
+from flask.ext.login import login_user, logout_user, current_user, login_required
+from app import app, db, lm
+from .forms import LoginForm,SearchForm
+from .models import User
+import bcrypt
 
-from flask import Flask
-from flask import render_template , request , redirect, url_for, flash, session, escape
-from flask.ext.bcrypt import Bcrypt
-from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.login import LoginManager, login_required, login_user, logout_user, current_user
-
-from models import User, db
-from forms import LoginForm, SearchForm
-
-from functions import * 
-
-import sqlite3
-
-from app import app
-
-
-# from flask import session, g, abort 
-# from contextlib import closing
-
-# def init_db():
-#     with closing(connect_db()) as db:
-#         with app.open_resource('schema.sql', mode='r') as f:
-#             db.cursor().executescript(f.read())
-#         db.commit()
-
-
-# # configuration
-# DATABASE = '/tmp/flaskr.db'
-# DEBUG = True
-# #SECRET_KEY = 'development key'
-# USERNAME = 'admin'
-#PASSWORD = 'default'
-
-
-
-#logger = logging.getLogger(__name__)
-#login_manager.login_view = "users.login"
-login_manager = LoginManager()
-bcrypt = Bcrypt()
-
-@login_manager.user_loader
-def user_loader(user_id):
+@lm.user_loader
+def load_user(id):
     """Given *user_id*, return the associated User object.
-
     :param unicode user_id: user_id (username) user to retrieve
     """
-    return User.query.get(user_id)
+    return User.query.get(int(id))
 
-
-app = Flask(__name__)
-app.secret_key = 'iocl database'
-
+@app.before_request
+def before_request():
+    g.user = current_user
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """For GET requests, display the login form. For POSTS, login the current user
     by processing the form."""
     print db
+    if g.user is not None and g.user.is_authenticated():
+        return redirect(url_for('database'))
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.get(form.username.data)
+        user = User.query.filter_by(username=form.username.data).first()
         if user:
-            if bcrypt.check_password_hash(user.password, form.password.data):
+            if bcrypt.hashpw(form.password.data, user.password) == user.password:
                 user.authenticated = True
                 db.session.add(user)
                 db.session.commit()
                 login_user(user, remember=True)
-                
-                next = flask.request.args.get('next')
-                if not next_is_valid(next):
-                    return flask.abort(400)
-
-                return redirect(url_for("database"))
+                return redirect(url_for("database")) #or request.args.get('next')
     return render_template("login.html", form=form)
 
 @app.route("/logout", methods=["GET"])
@@ -94,65 +55,29 @@ def logout():
 
 @app.route('/about')
 def about():
-    """the about page"""
+    """the About page"""
     return render_template('about.html')
 
 @app.route('/')
 def index():
-    """redirect page"""
+    """Index Redirect Page"""
     return redirect(url_for('login'))
-
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-# 	if 'username' in session:
-# 		return redirect(url_for('database'))
-	
-# 	form = LoginForm()
-# 	if request.method == 'POST':
-#         	if form.validate() == False:
-# 			flash("")
-#     			return render_template('login.html', form=form)
-#         	else:
-#     			username,password =  form.username.data,form.password.data
-#     			if valid_login(username,password):
-#     				session['username'] = username
-#     				return redirect(url_for('database'))
-#     			else:
-#     				return render_template('login.html', form=form)
-# 	elif request.method == 'GET':
-#	    	return render_template('login.html', form=form)
 
 @app.route('/database', methods=['GET', 'POST'])
 @login_required
 def database():
-	# if 'username' in session:
-	# 	searchform = SearchForm()
-	# 	if request.method == 'POST':
- 	#        	if searchform.validate() == False:
-	# 			flash("")
- 	#    			return render_template('database.html', form=searchform)
- 	#        	else:
-	#    			searchterm =  searchform.searchterm.data
- 	#    			return searchterm
-	# 	elif request.method == 'GET':
-	#     		return render_template('database.html', form=searchform)
-	# else:
-	# 	return redirect(url_for('login'))
-
+    """For GET requests, display the database search form. For POSTS, dearch the database 
+    for the given search term."""
 	print db
     	form = SearchForm()
     	if form.validate_on_submit():
-        	searchterm =  searchform.searchterm.data
+        	searchterm =  form.searchterm.data
         	return searchterm
     	return render_template("database.html", form=form)
 
-# @app.route('/logout') #, methods=['GET', 'POST'])
-# def logout():
-# 	session.pop('username', None)
-# 	return redirect(url_for('login'))
-
 @app.errorhandler(404)
 def page_not_found(error):
+    """redirect wrongs urls to login/database"""
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
