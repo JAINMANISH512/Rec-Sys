@@ -68,16 +68,16 @@ def index():
 def database():
     """For GET requests, display the database search form. For POSTS, dearch the database 
     for the given search term."""
-	print db
-    	form = SearchForm()
-    	if form.validate_on_submit():
-        	searchterm =  form.searchterm.data
-        	return searchterm
-    	return render_template("database.html", form=form)
+    print db
+    form = SearchForm()
+    if form.validate_on_submit():
+        searchterm =  form.searchterm.data
+        return searchterm
+    return render_template("database.html", form=form)
 
 @app.errorhandler(404)
 def page_not_found(error):
-    """redirect wrongs urls to login/database"""
+    """redirect wrongs urls to login or database"""
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
