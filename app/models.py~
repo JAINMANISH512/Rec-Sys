@@ -1,0 +1,111 @@
+"""Database models for the rec-sys application."""
+
+import datetime
+
+from app import db
+
+class User(db.Model):
+    """A user capable of viewing 
+
+    :param str username: username of user
+    :param str password: encrypted password for the user
+
+    """
+    __tablename__ = 'user'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String)
+    password = db.Column(db.String)
+    authenticated = db.Column(db.Boolean, default=False)
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
+        
+    def __repr__(self):
+        return '<User %r>' % self.username
+
+    def is_active(self):
+         """True, as all users are active."""
+         return True
+
+     def get_id(self):
+         """Return the username to satify Flask-Login's requirements."""
+         try:
+            return unicode(self.id)  # python 2
+         except NameError:
+            return str(self.id)  # python 3
+
+     def is_authenticated(self):
+         """Return True if the user is authenticated."""
+         return self.authenticated
+
+     def is_anonymous(self):
+         """False, as anonymous users aren't supported."""
+         return False
+
+    
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    body = db.Column(db.String)
+    timestamp = db.Column(db.DateTime)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return '<Post %r>' % (self.body)
+
+
+# from flask.ext.sqlalchemy import SQLAlchemy
+# from flask import Flask
+
+# app = Flask(__name__)
+# app.config['SQLALCHEMY_DATABASE_URL'] = 'temp.db'
+# db = SQLAlchemy(app)
+
+# class Document(db.Model):
+#     """A digital product for uploaded in the database.
+
+#     :param int id: Unique id for this product
+#     :param str name: Human-readable name of this product
+#     :param str file_name: Path to file this digital product represents
+#     :param str version: Optional version to track updates to products
+#     :param bool is_active: Used to denote if a product should be considered for-sale
+#     :param float price: Price of product
+
+#     """
+#     __tablename__ = 'product'
+#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+#     name = db.Column(db.String)
+#     file_name = db.Column(db.String)
+#     version = db.Column(db.String, default=None, nullable=True)
+#     is_active = db.Column(db.Boolean, default=True, nullable=True)
+#     price = db.Column(db.Float)
+
+#     def __str__(self):
+#         """Return the string representation of a product."""
+#         if self.version is not None:
+#             return '{} (v{})'.format(self.name, self.version)
+#         return self.name
+
+# class Purchase(db.Model):
+#     """Contains information about the sale of a product.
+
+#     :param str uuid: Unique ID (and URL) generated for the customer unique to this purchase
+#     :param str email: Customer's email address
+#     :param int product_id: ID of the product associated with this sale
+#     :param product: The associated product
+#     :param downloads_left int: Number of downloads remaining using this URL
+
+#     """
+#     __tablename__ = 'purchase'
+#     uuid = db.Column(db.String, primary_key=True)
+#     email = db.Column(db.String)
+#     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
+#     product = db.relationship(Product)
+#     downloads_left = db.Column(db.Integer, default=5)
+#     sold_at = db.Column(db.DateTime, default=datetime.datetime.now)
+
+#     def sell_date(self):
+#         return self.sold_at.date()
+
+#     def __str__(self):
+#         """Return the string representation of the purchase."""
+#         return '{} bought by {}'.format(self.product.name, self.email)
+
