@@ -9,6 +9,7 @@ from flask.ext.login import login_user, logout_user, current_user, login_require
 from app import app, db, lm
 from .forms import LoginForm,SearchForm
 from .models import User
+from .search import search
 import bcrypt
 
 @lm.user_loader
@@ -26,7 +27,6 @@ def before_request():
 def login():
     """For GET requests, display the login form. For POSTS, login the current user
     by processing the form."""
-    print db
     if g.user is not None and g.user.is_authenticated():
         return redirect(url_for('database'))
     form = LoginForm()
@@ -41,6 +41,12 @@ def login():
                 return redirect(url_for("database")) #or request.args.get('next')
     return render_template("login.html", form=form)
 
+@app.route("/profile")
+@login_required
+def profile():
+    return redirect(url_for('database'))
+
+
 @app.route("/logout", methods=["GET"])
 @login_required
 def logout():
@@ -51,7 +57,7 @@ def logout():
     db.session.commit()
     logout_user()
     form = LoginForm()
-    return render_template("login.html", form=form)
+    return redirect(url_for('login'))
 
 @app.route('/about')
 def about():
@@ -68,12 +74,12 @@ def index():
 def database():
     """For GET requests, display the database search form. For POSTS, dearch the database 
     for the given search term."""
-    print db
     form = SearchForm()
     if form.validate_on_submit():
         searchterm =  form.searchterm.data
-        return searchterm
-    return render_template("database.html", form=form)
+        doc = search(searchterm)
+        return render_template("database.html", form=form, doc=doc)
+    return render_template("database.html", form=form, doc=None)
 
 @app.errorhandler(404)
 def page_not_found(error):
